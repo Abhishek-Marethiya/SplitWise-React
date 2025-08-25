@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
       setIsLogin(false);
       return;
     }
-  
+   
     if (res.ok) {
       console.log("response ok");
       const user = await res.json();
@@ -35,6 +35,10 @@ export const AuthProvider = ({ children }) => {
       setCurrentUser(user);
       setIsLogin(true);
       setLoading(false)
+    }
+    else{
+      console.log("RESPONSE IS NOT OKAY...");
+      
     }
   } catch (err) {
     console.error("Auth check failed", err);

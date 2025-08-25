@@ -48,7 +48,7 @@ const AuthPage = () => {
         setCurrentUser(Userdata);
         setIsLogin(true);
         toast.success("Logged in successfully!");
-        navigate('/home');
+        navigate('/');
       } else {
       
         toast.success("Account created successfully! Please sign in.");

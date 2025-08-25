@@ -7,10 +7,12 @@ const app=express();
 const authRouter=require('./routes/authRoutes')
 const groupRoutes=require('./routes/groupRoutes');
 const expenseRoutes=require('./routes/expenseRoutes')
+const connectDB =require("./utils/connectDB")
 dotenv.config();
 app.use(express.json());
 app.use(cookieParser());
 
+const PORT = process.env.SERVER_PORT || 3000;
 
 app.use(cors({
 	origin: 'http://localhost:5173', // your frontend's URL
@@ -24,24 +26,13 @@ app.use('/api/auth',authRouter)
 app.use("/api/groups", groupRoutes);
 app.use("/api/expenses", expenseRoutes);
 
-const connectMongoDB = async () => {
-	try {
-		const conn = await mongoose.connect(process.env.MONGO_URI);
-		console.log(`✅ MongoDB connected at: ${conn.connection.host}`);
 
-		// Start server only after DB is connected
-		const PORT = process.env.SERVER_PORT || 3000;
-		app.listen(PORT, () => {
-			console.log(`🚀 Server running on port ${PORT}`);
-		});
-	} catch (error) {
-		console.error(`❌ Error connecting to MongoDB: ${error.message}`);
-		process.exit(1);
-	}
-};
-connectMongoDB();
-
-
-
+connectDB().then(() => {
+	app.listen(PORT, () => {
+		console.log(`✅ Server running on port ${PORT}`);
+	});
+}).catch(err => {
+	console.error("DB Connection Failed:", err.message);
+});
 
 

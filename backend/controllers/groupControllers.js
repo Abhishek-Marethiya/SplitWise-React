@@ -48,7 +48,8 @@ exports.getGroupById=async(req,res)=>{
   try {
        const {id}=req.params;
        const group=await Group.findById(id);
-
+      console.log(group);
+      
        if(!group) {
              return res.status(404).json({ message: "Group not found" });
        }

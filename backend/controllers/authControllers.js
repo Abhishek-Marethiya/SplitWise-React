@@ -53,12 +53,16 @@ exports.signup = async (req, res) => {
           "Password must be at least 6 characters long and include uppercase, lowercase, number, and special character",
       });
     }
-
-    const exists = await User.findOne({ email });
+    console.log("Inside signup controller..");
+    
+    const exists = false;
+    console.log(exists);
+    
     if (exists) {
       return res.status(400).json({ error: "Email already in use" });
     }
 
+    
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -69,7 +73,11 @@ exports.signup = async (req, res) => {
     });
     if(user){
         generateTokenAndSetCookie(user._id, res);
+        console.log("After Generating Token...");
+        
       await user.save();
+      console.log("After Saving Data in DB");
+      
       res.status(201).json(user);
     }
   } catch (err) {

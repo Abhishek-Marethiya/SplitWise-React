@@ -9,7 +9,7 @@ const generateTokenAndSetCookie = (userId, res) => {
     process.env.JWT_SECRET,   // secret from .env
     { expiresIn: "7d" }       // token expiry
   );
-console.log("Token:",token);
+console.log("Generated Token:",token);
 
   // Store token in HTTP-only cookie
   res.cookie("jwt", token, {
