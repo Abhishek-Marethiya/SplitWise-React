@@ -123,7 +123,12 @@ const CreateGroup = () => {
               ))}
             </div>
           </div>
-
+          <button
+             onClick={() => navigate(`/add-member`)}
+             className="text-blue-600 font-medium hover:underline flex items-center"
+           >
+             + Create User
+           </button>
           {/* Submit */}
           <button
             type="submit"

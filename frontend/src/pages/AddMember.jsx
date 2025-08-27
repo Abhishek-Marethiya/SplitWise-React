@@ -54,10 +54,16 @@ const AddMember = () => {
         password: "Default@123",
       });
 
-      // Add the new user to the group
-      await addMemberToGroup(groupId, newUser.name);
-      toast.success("Member added successfully!");
-      navigate(`/group/${groupId}`);
+      // Add the new user to the group if groupId is provided
+      if (groupId) {
+        await addMemberToGroup(groupId, newUser.name);
+        toast.success("Member added successfully!");
+        navigate(`/group/${groupId}`);
+      } else {
+        // If no groupId, just navigate to create group page
+        toast.success("User created successfully! You can now create a group.");
+        navigate(`/create-group`);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong. Try again.");

@@ -72,7 +72,6 @@ export default function AddExpense() {
 
     try {
       await addExpense(newExpense);
-      toast.success("Expense added!");
       navigate(`/group/${groupId}`);
     } catch (err) {
       toast("Something went wrong", "error");

@@ -113,8 +113,7 @@ console.log(res);
       }
       const newUser = await res.json();
       setAllUsers((prev) => Array.isArray(prev) ? [...prev, newUser] : [newUser]);
-      toast.success("User created");
-      return newUser;
+    
     } catch (err) {
       console.error("createUser error", err);
       toast.error(err.message || "Could not create user");
