@@ -10,13 +10,15 @@ import { ExpenseProvider } from './context/ExpenseContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <AuthProvider>
+    <ExpenseProvider>
     <GroupProvider>
-      <ExpenseProvider>
+      
   <BrowserRouter>
   <App />
   </BrowserRouter>
-  </ExpenseProvider>
+ 
   </GroupProvider>
+   </ExpenseProvider>
   </AuthProvider>
 )
 

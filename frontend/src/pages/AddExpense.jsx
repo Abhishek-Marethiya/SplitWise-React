@@ -4,12 +4,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { ExpenseContext } from "../context/ExpenseContext";
 import { GroupContext } from "../context/GroupContext";
+import toast from "react-hot-toast";
 
 export default function AddExpense() {
 
     const {groupId}=useParams();
-    console.log(groupId);
-    
      const navigate = useNavigate();
   const {isLogin}=useContext(AuthContext);
   if(!isLogin){
@@ -24,7 +23,7 @@ export default function AddExpense() {
   const [amount, setAmount] = useState("");
   const [paidBy, setPaidBy] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
-  const [toast, setToast] = useState(null);
+
 
   // Fetch group participants
   useEffect(() => {
@@ -33,13 +32,9 @@ export default function AddExpense() {
       console.log(g);
       
       if (g) setCurrentGroup(g);
-      console.log(currentGroup);
-      
     }
     fetchGroup();
-  }, [groupId, getGroupById]);
-  
-  
+  }, [groupId]);
   
   const toggleMember = (name) => {
     setSelectedMembers((prev) =>
@@ -52,7 +47,7 @@ export default function AddExpense() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !amount || !paidBy) {
-      showToast("All fields are required", "error");
+      toast.success("All fields are required", "error");
       return;
     }
     if (selectedMembers.length < 1) {
@@ -76,11 +71,11 @@ export default function AddExpense() {
     };
 
     try {
-      await addExpense(groupId,newExpense);
-      showToast("Expense added!");
-      navigate(`/groups/${groupId}`);
+      await addExpense(newExpense);
+      toast.success("Expense added!");
+      navigate(`/group/${groupId}`);
     } catch (err) {
-      showToast("Something went wrong", "error");
+      toast("Something went wrong", "error");
     }
   };
 

@@ -8,7 +8,7 @@ export const GroupProvider = ({ children }) => {
   const [groups, setGroups] = useState([]);
   const [currentGroup, setCurrentGroup]=useState(null);
   const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState(null);
+  const [summary, setSummary] = useState({});
    
   // Fetch all groups
   const fetchGroups = async () => {
@@ -34,33 +34,32 @@ export const GroupProvider = ({ children }) => {
     }
   };
 
-  const getGroupById=async(groupId)=>{
-        try {
-      const res = await fetch(`http://localhost:8080/api/groups/${groupId}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });      
-      if (!res.ok) throw new Error("Failed to fetch groups");
-      const data = await res.json();
-      console.log("data",data);
-      
-      setCurrentGroup(data);
-      console.log("Group:",data);
-      
-    } catch (err) {
-      console.error("fetchGroups error:", err);
-      toast.error("Could not load groups");
-    }
+// in GroupContext
+const getGroupById = async (groupId) => {
+  try {
+    const res = await fetch(`http://localhost:8080/api/groups/${groupId}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Failed to fetch groups");
+    const data = await res.json();
+    setCurrentGroup(data);
+    return data;   
+  } catch (err) {
+    console.error("fetchGroups error:", err);
+    toast.error("Could not load groups");
   }
+};
+
   // Create new group
-  const createGroup = async (name, members) => {
+  const createGroup = async (name, participants) => {
     try {
       const res = await fetch("http://localhost:8080/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ name, members }),
+        body: JSON.stringify({ name, participants }),
       });
       if (!res.ok) throw new Error("Failed to create group");
 
@@ -82,11 +81,19 @@ export const GroupProvider = ({ children }) => {
       });
       if (!res.ok) throw new Error("Failed to delete group");
 
+      const result = await res.json();
+      console.log("Group deletion result:", result);
+
       setGroups((prev) => prev.filter((g) => g._id !== id));
-      toast.success("Group deleted");
+      toast.success(`Group deleted successfully! (${result.deletedExpensesCount || 0} expenses also removed)`);
+      
+      // Trigger a refresh of expenses to recalculate overall balance
+      // This will be handled by the ExpenseContext if it's listening
+      return true;
     } catch (err) {
       console.error("deleteGroup error:", err);
       toast.error("Could not delete group");
+      return false;
     }
   };
   
@@ -106,31 +113,79 @@ export const GroupProvider = ({ children }) => {
       }
 
      } catch (error) {
-      console.error("addMemberToGroup error:", err);
+      console.error("addMemberToGroup error:", error);
       toast.error("Could not load group");
      }
   }
+
+  const removeMemberFromGroup = async (groupId, memberName) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/groups/${groupId}/member`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ memberName }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to remove member");
+      
+      toast.success("Member removed successfully!");
+      return true;
+    } catch (error) {
+      console.error("removeMemberFromGroup error:", error);
+      toast.error("Could not remove member");
+      return false;
+    }
+  };
+
+  const updateMemberName = async (groupId, oldName, newName) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/groups/${groupId}/member`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ oldName, newName }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to update member name");
+      
+      toast.success("Member name updated successfully!");
+      return true;
+    } catch (error) {
+      console.error("updateMemberName error:", error);
+      toast.error("Could not update member name");
+      return false;
+    }
+  };
   // Fetch summary (owes/owedBy like in JS code)
   const fetchSummary = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/users/me", {
+      const res = await fetch("http://localhost:8080/api/auth/me", {
         method: "GET",
         credentials: "include",
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        setSummary({});
+        return;
+      }
       const user = await res.json();
 
       const netMap = {};
-      user.owes?.forEach((o) => {
+      (user.owes || []).forEach((o) => {
         netMap[o.to] = (netMap[o.to] || 0) - Number(o.amount);
       });
-      user.owedBy?.forEach((o) => {
+      (user.owedBy || []).forEach((o) => {
         netMap[o.from] = (netMap[o.from] || 0) + Number(o.amount);
       });
 
       setSummary(netMap);
     } catch (err) {
       console.error("fetchSummary error:", err);
+      setSummary({});
     }
   };
 
@@ -141,7 +196,7 @@ export const GroupProvider = ({ children }) => {
 
   return (
     <GroupContext.Provider
-      value={{ groups, loading, fetchGroups, createGroup, deleteGroup, summary,addMemberToGroup ,getGroupById,currentGroup,setCurrentGroup}}
+      value={{ groups, loading, fetchGroups, createGroup, deleteGroup, summary,addMemberToGroup ,getGroupById,currentGroup,setCurrentGroup,removeMemberFromGroup,updateMemberName}}
     >
       {children}
     </GroupContext.Provider>

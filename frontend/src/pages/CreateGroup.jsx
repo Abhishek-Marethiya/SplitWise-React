@@ -11,6 +11,13 @@ const CreateGroup = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const navigate = useNavigate();
 
+  // Auto-select the current user when component loads
+  useEffect(() => {
+    if (currentUser && currentUser._id) {
+      setSelectedUsers([currentUser._id]);
+    }
+  }, [currentUser]);
+
   
   
     if (!isLogin) navigate("/");
@@ -18,11 +25,21 @@ const CreateGroup = () => {
 
   // Handle checkbox toggle
   const toggleUser = (userId) => {
-    setSelectedUsers((prev) =>
-      prev.includes(userId)
+    console.log(userId);
+    
+    // Prevent current user from being unchecked
+    if (userId === currentUser?._id) {
+      return;
+    }
+    
+    setSelectedUsers((prev) => {
+      const updated = prev.includes(userId)
         ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
+        : [...prev, userId];
+
+      console.log("selected users:", updated);
+      return updated;
+    });
   };
 
   // Handle form submission
@@ -41,8 +58,10 @@ const CreateGroup = () => {
     }
 
     try {
-      await createGroup(groupName, selectedUsers);
-      toast.success("Group created successfully!");
+      const selectedNames = allUsers
+    .filter(u => selectedUsers.includes(u._id))
+    .map(u => u.name.trim());
+      await createGroup(groupName, selectedNames);
       navigate("/");
     } catch (err) {
       console.error("Group creation error", err);
@@ -75,6 +94,9 @@ const CreateGroup = () => {
           {/* Participants */}
           <div>
             <label className="block mb-1 font-medium">Add Participants</label>
+            <p className="text-sm text-gray-600 mb-2">
+              You are automatically included in the group. Select additional participants below:
+            </p>
             <div className="space-y-2 max-h-48 overflow-y-auto border p-3 rounded bg-gray-50">
               {allUsers?.map((user) => (
                 <div key={user._id} className="flex items-center">
@@ -84,7 +106,8 @@ const CreateGroup = () => {
                     value={user._id}
                     checked={selectedUsers.includes(user._id)}
                     onChange={() => toggleUser(user._id)}
-                    className="mr-2"
+                    disabled={user._id === currentUser?._id}
+                    className={`mr-2 ${user._id === currentUser?._id ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                   <label
                     htmlFor={`user-${user._id}`}
@@ -94,7 +117,7 @@ const CreateGroup = () => {
                         : ""
                     }
                   >
-                    {user.name}
+                    {user.name} {user._id === currentUser?._id && "(You)"}
                   </label>
                 </div>
               ))}

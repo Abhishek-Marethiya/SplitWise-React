@@ -1,17 +1,17 @@
 // src/pages/EditExpense.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { useGroup } from "../context/GroupContext";
-import { useExpense } from "../context/ExpenseContext";
+import { AuthContext } from "../context/AuthContext";
+import { GroupContext } from "../context/GroupContext";
+import { ExpenseContext } from "../context/ExpenseContext";
 
 export default function EditExpense() {
   const { groupId, expenseId } = useParams();
   const navigate = useNavigate();
 
-  const { user, logout } = useAuth();
-  const { getGroupById } = useGroup();
-  const { getExpenseById, updateExpense } = useExpense();
+  const { currentUser, logout, isLogin } = useContext(AuthContext);
+  const { getGroupById } = useContext(GroupContext);
+  const { getExpenseById, editExpense } = useContext(ExpenseContext);
 
   const [group, setGroup] = useState(null);
   const [expense, setExpense] = useState(null);
@@ -20,12 +20,12 @@ export default function EditExpense() {
   const [paidBy, setPaidBy] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [toast, setToast] = useState(null);
-    const {isLogin}=useContext(AuthContext);
-  if(!isLogin){
-    navigate('/');
-  }
-  // Load group and expense
+
   useEffect(() => {
+    if (!isLogin) {
+      navigate('/');
+      return;
+    }
     async function fetchData() {
       const g = await getGroupById(groupId);
       setGroup(g);
@@ -34,14 +34,16 @@ export default function EditExpense() {
       setExpense(exp);
 
       if (exp) {
-        setTitle(exp.description);
-        setAmount(exp.amount);
-        setPaidBy(exp.paidBy);
-        setSelectedMembers(exp.splitBetween.map((p) => p.memberName));
+        setTitle(exp.description || "");
+        setAmount(String(exp.amount ?? ""));
+        setPaidBy(exp.paidBy?.name || exp.paidBy || "");
+        setSelectedMembers((exp.splitBetween || []).map((p) => p.memberName));
       }
     }
-    fetchData();
-  }, [groupId, expenseId, getGroupById, getExpenseById]);
+    if (groupId && expenseId) {
+      fetchData();
+    }
+  }, [groupId]);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -67,74 +69,35 @@ export default function EditExpense() {
 
     const splitBetween = selectedMembers.map((name) => ({
       memberName: name,
-      share: parseFloat((amount / selectedMembers.length).toFixed(2)),
+      share: parseFloat((Number(amount) / selectedMembers.length).toFixed(2)),
     }));
 
     const updatedExpense = {
-      ...expense,
       description: title,
-      amount: parseFloat(amount),
+      amount: parseFloat(Number(amount)),
       paidBy,
       splitType: "equal",
       splitBetween,
       date: new Date().toISOString(),
+      groupId,
     };
 
     try {
-      await updateExpense(updatedExpense);
+      await editExpense(expenseId, updatedExpense);
       showToast("Expense updated!");
+      
+      // Navigate back to group details
       navigate(`/group/${groupId}`);
     } catch (err) {
       showToast("Something went wrong", "error");
     }
   };
 
-  if (!user) return null;
+  if (!currentUser) return null;
 
   return (
     <div className="bg-gradient-to-br from-purple-50 to-green-50 min-h-screen">
-      {/* Header */}
-      <header className="bg-white shadow-md py-4 transition-smooth">
-        <div className="max-w-6xl mx-auto px-4 flex justify-between items-center">
-          <div
-            className="flex items-center space-x-4 cursor-pointer"
-            onClick={() => navigate("/home")}
-          >
-            <div className="logo bg-white/20 backdrop-blur-sm rounded-full">
-              <img src="/images/icons8-rupee-24.png" alt="logo" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800 animate-fadeIn">
-              Welcome, <span className="text-cyan-600">{user?.name}</span>
-            </h1>
-          </div>
 
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => navigate("/home")}
-              className="btn-primary text-white px-4 py-2 rounded-md flex items-center gap-2 transition-smooth"
-            >
-              Groups
-            </button>
-            <button
-              onClick={logout}
-              className="px-4 py-[6.5px] rounded-md border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-smooth"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-5 right-5 z-50 px-4 py-2 rounded shadow text-white ${
-            toast.type === "success" ? "bg-green-500" : "bg-red-500"
-          } animate-slideIn`}
-        >
-          {toast.msg}
-        </div>
-      )}
 
       {/* Form */}
       <div className="max-w-xl mx-auto py-10 px-6 bg-white shadow rounded-lg mt-10 animate-fadeIn">

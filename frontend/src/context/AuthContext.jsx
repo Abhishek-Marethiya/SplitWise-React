@@ -98,9 +98,33 @@ console.log(res);
     }
 
   }
+
+  const createUser = async ({ name, email, password }) => {
+    try {
+      const res = await fetch("http://localhost:8080/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name, email, password }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Signup failed");
+      }
+      const newUser = await res.json();
+      setAllUsers((prev) => Array.isArray(prev) ? [...prev, newUser] : [newUser]);
+      toast.success("User created");
+      return newUser;
+    } catch (err) {
+      console.error("createUser error", err);
+      toast.error(err.message || "Could not create user");
+      throw err;
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ isLogin, currentUser,allUsers, logout,setIsLogin ,setCurrentUser,loading}}
+      value={{ isLogin, currentUser,allUsers, logout,setIsLogin ,setCurrentUser,loading, createUser}}
     >
       {children}
     </AuthContext.Provider>

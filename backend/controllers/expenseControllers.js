@@ -14,9 +14,7 @@ exports.addExpense = async (req, res) => {
 
 exports.getExpenses = async (req, res) => {
   const expenses = await Expense.find()
-    .populate("paidBy", "name")
-    .populate("groupId", "name")
-    .populate("splitBetween", "name");
+    .populate("groupId", "name");
   res.json(expenses);
 };
 
@@ -24,9 +22,7 @@ exports.getExpenseById=async(req,res)=>{
   try {
         const {id}=req.params;
         const expense=await Expense.findById(id)
-            .populate("paidBy", "name")
-    .populate("groupId", "name")
-    .populate("splitBetween", "name")
+            .populate("groupId", "name")
 
         if(!expense) return res.status(404).json({message:"Expense not found"});
         
@@ -40,15 +36,22 @@ exports.getExpenseById=async(req,res)=>{
 exports.deleteExpense=async(req,res)=>{
   try {
     const {id}=req.params;
+    console.log("Attempting to delete expense with ID:", id);
+    
     const deletedExpense=await Expense.findByIdAndDelete(id);
+    console.log("Delete result:", deletedExpense);
 
-if (!deletedExpense) {
+    if (!deletedExpense) {
+      console.log("Expense not found with ID:", id);
       return res.status(404).json({ message: "Expense not found" });
     }
+    
+    console.log("Expense deleted successfully:", deletedExpense._id);
     res.json({ message: "Expense deleted successfully", deletedExpense });
 
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.error("Error deleting expense:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 }
 

@@ -12,29 +12,28 @@ import AddMember from "./pages/AddMember";
 import AddExpense from "./pages/AddExpense";
 import GroupDetails from "./pages/GroupDetails";
 import ExpenseDetails from "./pages/ExpenseDetails";
+import EditExpense from "./pages/EditExpense";
 
 function App() {
   const { isLogin, loading ,currentUser,logout} = useContext(AuthContext);
-console.log(isLogin);
   if (loading) {
      return (
       <Loader/>
-     ) // or a spinner
+     )
   }
-console.log(currentUser);
 
   return (
     <>
       <Toaster position="top-right" reverseOrder={false} />
-      {isLogin && <Header username={currentUser} onLogout={logout} />} 
+      {isLogin && currentUser && <Header username={currentUser} onLogout={logout} />}
       <Routes>
-        <Route path="/" element={ isLogin ? <Home /> : <AuthPage />} />
+        <Route path="/" element={ isLogin ? <Home/> : <AuthPage/>}/>
         <Route path="/create-group" element={<CreateGroup/>}/>
-        <Route path="/add-member" elemenent={<AddMember/>}/>
-        <Route path="/add-expense/:id" element={<AddExpense/>}/>
-        <Route path="/groupdetails/:id" element={<GroupDetails />} />
-        <Route path="/expense/:expenseId" element={<ExpenseDetails />} />
-
+        <Route path="/add-member" element={<AddMember/>}/>
+        <Route path="/add-expense/:groupId" element={<AddExpense/>}/>
+        <Route path="/edit-expense/:groupId/:expenseId" element={<EditExpense/>}/>
+        <Route path="/group/:groupId" element={<GroupDetails/>}/>
+        <Route path="/expense/:expenseId" element={<ExpenseDetails/>}/>
       </Routes>
     </>
   );
