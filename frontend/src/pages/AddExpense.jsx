@@ -15,7 +15,7 @@ export default function AddExpense() {
     navigate('/');
   }
  
-
+  
   const { currentUser, logout } = useContext(AuthContext);
   const { addExpense } = useContext(ExpenseContext);
   const {currentGroup, setCurrentGroup,getGroupById} = useContext(GroupContext)
@@ -35,6 +35,7 @@ export default function AddExpense() {
     }
     fetchGroup();
   }, [groupId]);
+
   
   const toggleMember = (name) => {
     setSelectedMembers((prev) =>
@@ -68,8 +69,8 @@ export default function AddExpense() {
       splitType: "equal",
       date: new Date().toISOString(),
       splitBetween,
-    };
-
+    };     
+       
     try {
       await addExpense(newExpense);
       navigate(`/group/${groupId}`);
