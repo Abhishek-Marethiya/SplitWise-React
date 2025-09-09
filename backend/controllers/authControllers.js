@@ -55,8 +55,8 @@ exports.signup = async (req, res) => {
     }
     console.log("Inside signup controller..");
     
-    const exists = false;
-    console.log(exists);
+    const exists =await User.exists({email}) ;;
+
     
     if (exists) {
       return res.status(400).json({ error: "Email already in use" });
