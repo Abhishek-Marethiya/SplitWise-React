@@ -23,6 +23,42 @@ const GroupDetails = () => {
     navigate('/');
   }
 
+  // Helper: compute net settlements between members for a list of expenses
+  const computeSettlements = (safeExpenses) => {
+    const pairToAmount = {};
+    for (const exp of safeExpenses) {
+      const payer = exp?.paidBy?.name || exp?.paidBy;
+      const splits = Array.isArray(exp?.splitBetween) ? exp.splitBetween : [];
+      for (const s of splits) {
+        if (!payer || !s?.memberName) continue;
+        if (s.memberName === payer) continue;
+        const key = `${s.memberName}__TO__${payer}`;
+        pairToAmount[key] = (pairToAmount[key] || 0) + Number(s.share || 0);
+      }
+    }
+
+    // Net bilateral debts: for A<->B keep a single directed amount
+    const visited = new Set();
+    const results = [];
+    for (const key of Object.keys(pairToAmount)) {
+      const [from, to] = key.split("__TO__");
+      const reverseKey = `${to}__TO__${from}`;
+      if (visited.has(key) || visited.has(reverseKey)) continue;
+
+      const forward = pairToAmount[key] || 0;
+      const backward = pairToAmount[reverseKey] || 0;
+      const net = forward - backward;
+      if (net > 0.0001) {
+        results.push({ from, to, amount: net });
+      } else if (net < -0.0001) {
+        results.push({ from: to, to: from, amount: -net });
+      }
+      visited.add(key);
+      visited.add(reverseKey);
+    }
+    return results;
+  };
+
   useEffect(() => {
     const aborter = new AbortController();
     const fetchData = async () => {  
@@ -35,23 +71,8 @@ const GroupDetails = () => {
       const safeExpenses = Array.isArray(data) ? data : [];
       setExpenses(safeExpenses);
 
-      // Build aggregated owes within this group
-      const pairToAmount = {};
-      for (const exp of safeExpenses) {
-        const payer = exp?.paidBy?.name || exp?.paidBy;
-        const splits = Array.isArray(exp?.splitBetween) ? exp.splitBetween : [];
-        for (const s of splits) {
-          if (!payer || !s?.memberName) continue;
-          if (s.memberName === payer) continue;
-          const key = `${s.memberName}__TO__${payer}`;
-          pairToAmount[key] = (pairToAmount[key] || 0) + Number(s.share || 0);
-        }
-      }
-      const aggregated = Object.entries(pairToAmount).map(([key, amount]) => {
-        const [from, to] = key.split("__TO__");
-        return { from, to, amount };
-      });
-      setSettlements(aggregated);
+      // Compute netted settlements
+      setSettlements(computeSettlements(safeExpenses));
     };
     fetchData();
     return () => aborter.abort();
@@ -89,24 +110,13 @@ const GroupDetails = () => {
       setExpenses(safeExpenses);
 
       // Recalculate settlements without the removed member
-      const pairToAmount = {};
-      for (const exp of safeExpenses) {
+      const filtered = safeExpenses.map((exp) => {
         const payer = exp?.paidBy?.name || exp?.paidBy;
         const splits = Array.isArray(exp?.splitBetween) ? exp.splitBetween : [];
-        for (const s of splits) {
-          if (!payer || !s?.memberName) continue;
-          if (s.memberName === payer) continue;
-          if (s.memberName === memberName) continue; // Skip removed member
-          if (payer === memberName) continue; // Skip if payer was removed
-          const key = `${s.memberName}__TO__${payer}`;
-          pairToAmount[key] = (pairToAmount[key] || 0) + Number(s.share || 0);
-        }
-      }
-      const aggregated = Object.entries(pairToAmount).map(([key, amount]) => {
-        const [from, to] = key.split("__TO__");
-        return { from, to, amount };
+        const filteredSplits = splits.filter((s) => s?.memberName !== memberName && payer !== memberName);
+        return { ...exp, splitBetween: filteredSplits, paidBy: payer };
       });
-      setSettlements(aggregated);
+      setSettlements(computeSettlements(filtered));
       
       console.log("Data refreshed successfully after member removal");
       toast.success(`${memberName} removed from group successfully!`);
@@ -136,22 +146,7 @@ const GroupDetails = () => {
       setExpenses(safeExpenses);
 
       // Recalculate settlements with updated member names
-      const pairToAmount = {};
-      for (const exp of safeExpenses) {
-        const payer = exp?.paidBy?.name || exp?.paidBy;
-        const splits = Array.isArray(exp?.splitBetween) ? exp.splitBetween : [];
-        for (const s of splits) {
-          if (!payer || !s?.memberName) continue;
-          if (s.memberName === payer) continue;
-          const key = `${s.memberName}__TO__${payer}`;
-          pairToAmount[key] = (pairToAmount[key] || 0) + Number(s.share || 0);
-        }
-      }
-      const aggregated = Object.entries(pairToAmount).map(([key, amount]) => {
-        const [from, to] = key.split("__TO__");
-        return { from, to, amount };
-      });
-      setSettlements(aggregated);
+      setSettlements(computeSettlements(safeExpenses));
       
       setEditingMember(null);
       setEditMemberName("");
@@ -226,22 +221,7 @@ const GroupDetails = () => {
                          setExpenses(safeExpenses);
 
                          // Recalculate settlements
-                         const pairToAmount = {};
-                         for (const expense of safeExpenses) {
-                           const payer = expense?.paidBy?.name || expense?.paidBy;
-                           const splits = Array.isArray(expense?.splitBetween) ? expense.splitBetween : [];
-                           for (const s of splits) {
-                             if (!payer || !s?.memberName) continue;
-                             if (s.memberName === payer) continue;
-                             const key = `${s.memberName}__TO__${payer}`;
-                             pairToAmount[key] = (pairToAmount[key] || 0) + Number(s.share || 0);
-                           }
-                         }
-                         const aggregated = Object.entries(pairToAmount).map(([key, amount]) => {
-                           const [from, to] = key.split("__TO__");
-                           return { from, to, amount };
-                         });
-                         setSettlements(aggregated);
+                         setSettlements(computeSettlements(safeExpenses));
                        }
                      }}
                      className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-sm"
